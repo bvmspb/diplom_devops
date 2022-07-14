@@ -1,0 +1,5 @@
+.idea/
+terraform/key.json
+terraform/key_static.txt
+terraform/.terraform/**
+**/.terraform.lock.hcl
