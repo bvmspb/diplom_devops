@@ -1,0 +1,5 @@
+- name: Install certbot
+  hosts: nginx
+  remote_user: ubuntu
+  roles:
+    - install-certbot

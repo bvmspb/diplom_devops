@@ -1,0 +1,46 @@
+---
+# tasks file for install-certbot
+- name: Certbot - Install snapd for certbot snap
+  become: true
+  ansible.builtin.apt:
+    name: snapd
+    state: present
+
+- name: Certbot - remove standard certbot package if any
+  become: true
+  ansible.builtin.apt:
+    name: certbot
+    state: absent
+
+- name: Certbot - install certbot snap
+  become: true
+  community.general.snap:
+    name: certbot
+    state: present
+    classic: yes
+
+#- name: Certbot - get SSL certificates for nginx 1/2
+#  set_fact:
+#    sub_domains_list_string: "{{ sub_domains.name | join(' -d ') }}"
+- name: Certbot - get SSL certificates for nginx 1/2
+  set_fact:
+    sub_domains_list_string: >-
+      {% for sub_domain in sub_domains %}
+      -d {{ sub_domain.name }}.{{ domain_name }} 
+      {% endfor %}
+
+- name: Certbot - get SSL certificates for nginx 2/2
+  become: true
+  ansible.builtin.shell:
+    cmd: "certbot --nginx -n {{ test_cert }} --agree-tos -m bvm@mail.ru -d {{ domain_name }} {{ sub_domains_list_string }}"
+  notify: reload-nginx
+
+- name: Certbot - print subdomains string
+  debug:
+    msg: "{{ sub_domains_list_string }}"
+
+#sudo apt install snapd
+#sudo snap install core; sudo snap refresh core
+#sudo apt-get remove certbot
+#sudo snap install --classic --no-wait certbot
+#sudo certbot --nginx -n --test-cert --agree-tos -m bvm@mail.ru -d bvm.pw -d alertmanager.bvm.pw -d gitlab.bvm.pw -d grafana.bvm.pw -d prometheus.bvm.pw -d www.bvm.pw

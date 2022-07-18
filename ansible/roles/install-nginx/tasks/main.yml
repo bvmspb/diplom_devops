@@ -1,0 +1,15 @@
+---
+# tasks file for install-nginx
+- name: Nginx - Install nginx
+  become: true
+  ansible.builtin.apt:
+    name: nginx-full
+    state: present
+  notify: reload-nginx
+
+- name: Nginx - Enable nginx
+  become: true
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: yes

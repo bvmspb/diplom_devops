@@ -1,0 +1,17 @@
+server {
+  listen 80;
+  server_name {{ domain_name }};
+  
+  root /var/www/html;
+}
+
+{% for item in sub_domains %}
+server {
+  listen {{ item.port }};
+  server_name {{ item.name }}.{{ domain_name }};
+  
+  location / {
+    proxy_pass http://{{ item.ip }}:{{ item.port }};
+  }
+}
+{% endfor %}

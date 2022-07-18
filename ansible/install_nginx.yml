@@ -1,0 +1,12 @@
+- name: Install nginx
+  hosts: nginx
+  remote_user: ubuntu
+  roles:
+    - install-nginx
+  post_tasks:
+    - name: Nginx - create config file
+      become: true
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/conf.d/{{ domain_name }}.conf
+      notify: reload-nginx

@@ -1,0 +1,5 @@
+---
+# handlers file for install-certbot
+- name: reload-nginx
+  become: true
+  ansible.builtin.command: nginx -s reload
