@@ -4,6 +4,16 @@ server {
   
   root /var/www/html;
 }
+# Forward proxy for local network to access Internet
+server {
+   listen 8888;
+    location / {
+        allow 10.129.0.0/24;
+        deny all;
+        resolver 8.8.8.8;
+        proxy_pass http://$http_host$uri$is_args$args;
+    }
+}
 
 {% for item in sub_domains %}
 server {

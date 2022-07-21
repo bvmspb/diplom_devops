@@ -17,9 +17,34 @@ variable "domain_name" {
 
 variable "test_cert" {
   default = "--test-cert" // TEST
-//  default = "" // PROD
-// Использовать "" для PROD и "--test-cert" для TEST SSL certificate
+  //  default = "" // PROD
+  // Использовать "" для PROD и "--test-cert" для TEST SSL certificate
 }
+
+variable "database_name" {
+  default = "wordpress"
+}
+
+variable "database_user" {
+  default = "wordpress"
+}
+
+variable "database_password" {
+  default = "wordpress"
+}
+
+variable "database_replication_masternode" {
+  default = "db01"
+}
+
+variable "database_replication_user" {
+  default = "replicausr"
+}
+
+variable "database_replication_user_password" {
+  default = "REplicauserpass123"
+}
+
 
 # Заменить на ID своего образа
 # ID можно узнать с помощью команды yc compute image list
@@ -31,14 +56,14 @@ variable "image_id" {
 # Уровень производительности CPU - позволяет заметно сэкономить на стоимости ВМ
 # https://cloud.yandex.ru/docs/compute/concepts/performance-levels
 variable "core_fraction" {
-  type = number
+  type    = number
   default = 20
 }
 
 # "Перываемая ВМ" - для экономии денег лучше ставить в true, для надежности в false
 # https://cloud.yandex.ru/docs/compute/operations/vm-create/create-preemptible-vm#create-preemptible
 variable "preemptible" {
-  type = bool
+  type    = bool
   default = true
 }
 

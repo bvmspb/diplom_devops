@@ -29,8 +29,8 @@ galaxy_info:
   #
   platforms:
     - name: Ubuntu
-        versions:
-          - 20
+      versions:
+        - 20.04
 
   # - name: Fedora
   #   versions:

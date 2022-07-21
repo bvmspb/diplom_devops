@@ -1,6 +1,14 @@
+//# Это первая команда, которая удаляет записи об известных ssh серверах для домена bvm.pw - при частых пересозданиях ВМ и тестировании это приводит к невозможности ProxyJump во внутреннюю виртуальную сеть через единственный сервер, доступный по внешнему ip-адресу
+//# неактуально для других машин, но и не страшно, если выдаст ошибку
+resource "null_resource" "clearknownhostsforbvmpw" {
+  provisioner "local-exec" {
+    command = "ssh-keygen -f '/home/bvm/.ssh/known_hosts' -R '${var.domain_name}'"
+  }
+}
+
 resource "null_resource" "wait" {
   provisioner "local-exec" {
-    command = "sleep 60"
+    command = "sleep 90"
   }
 
   depends_on = [
@@ -25,5 +33,25 @@ resource "null_resource" "certbot" {
 
   depends_on = [
     null_resource.nginx
+  ]
+}
+
+resource "null_resource" "apt_proxy" {
+  provisioner "local-exec" {
+    command = "ANSIBLE_FORCE_COLOR=1 ansible-playbook -i ../ansible/inventory/stage.yml ../ansible/install_apt_proxy.yml"
+  }
+
+  depends_on = [
+    null_resource.certbot
+  ]
+}
+
+resource "null_resource" "mysql" {
+  provisioner "local-exec" {
+    command = "ANSIBLE_FORCE_COLOR=1 ansible-playbook -i ../ansible/inventory/stage.yml ../ansible/install_mysql-server.yml"
+  }
+
+  depends_on = [
+    null_resource.apt_proxy
   ]
 }
