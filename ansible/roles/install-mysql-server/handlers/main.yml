@@ -1,0 +1,10 @@
+---
+# handlers file for install-mysql-server
+- name: restart-mysql
+  become: true
+  ansible.builtin.systemd:
+    name: mysql.service
+    state: restarted
+    enabled: true
+
+

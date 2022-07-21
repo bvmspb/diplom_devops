@@ -1,0 +1,76 @@
+---
+# tasks file for install-mysql-server
+- name: MYSQL - install mysql-server
+  become: true
+  ansible.builtin.apt:
+    name:
+      - mysql-server
+      - mysql-client
+      - python3-mysqldb
+    state: present
+    update_cache: true
+
+- name: MYSQL - Define config file for Master
+  template:
+    src=templates/master.cnf
+    dest=/etc/mysql/mysql.conf.d/master.cnf
+  when:
+    - mysql_replication_role == 'master'
+    - mysql_replication_user is defined
+    - (mysql_replication_master | length) > 0
+  notify:
+    - restart-mysql
+
+- name: MYSQL - Define config file for Slave
+  template:
+    src=templates/slave.cnf
+    dest=/etc/mysql/mysql.conf.d/slave.cnf
+  when:
+    - mysql_replication_role == 'slave'
+    - (mysql_replication_master | length) > 0
+  notify:
+    - restart-mysql
+
+- name: MYSQL - Enable remote login to master
+  become: true
+  lineinfile:
+     path: /etc/mysql/mysql.conf.d/mysqld.cnf
+     regexp: "^bind-address"
+     line: "bind-address = 0.0.0.0"
+  notify:
+    - restart-mysql
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: MYSQL - Enable mysql-server service
+  become: true
+  ansible.builtin.systemd:
+    name: mysql.service
+    state: started
+    enabled: true
+
+- name: Remove anonymous MySQL users.
+  mysql_user:
+    name: ""
+    host_all: true
+    state: absent
+
+- name: Remove MySQL test database.
+  mysql_db: "name='test' state=absent"
+
+- name: Ensure MySQL database present.
+  mysql_db:
+     name: "{{ database_name }}"
+     state: present
+
+- name: Ensure MySQL user present.
+  mysql_user:
+     name: "{{ database_user }}"
+     password: "{{ database_password }}"
+     priv: "{{ database_name }}.*:ALL,GRANT"
+#     priv: ""*.*:ALL,GRANT"
+     host: '%'
+     state: present
+
+- import_tasks: replication.yml

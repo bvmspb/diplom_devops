@@ -1,0 +1,6 @@
+- name: Install mysql
+  hosts: dbservers
+  remote_user: ubuntu
+  become: true
+  roles:
+    - install-mysql-server
