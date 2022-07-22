@@ -55,3 +55,13 @@ resource "null_resource" "mysql" {
     null_resource.apt_proxy
   ]
 }
+
+resource "null_resource" "wordpress" {
+  provisioner "local-exec" {
+    command = "ANSIBLE_FORCE_COLOR=1 ansible-playbook -i ../ansible/inventory/stage.yml ../ansible/install_wordpress.yml"
+  }
+
+  depends_on = [
+    null_resource.mysql
+  ]
+}

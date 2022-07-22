@@ -7,7 +7,7 @@ resource "local_file" "group_vars" {
     domain_name: ${var.domain_name}
     sub_domains:
       - name: www
-        ip: "127.0.0.1"
+        ip: "${yandex_compute_instance.node04-app.network_interface.0.ip_address}"
         port: 80
       - name: gitlab
         ip: "127.0.0.1"
@@ -25,10 +25,17 @@ resource "local_file" "group_vars" {
     test_cert: "${var.test_cert}"
     nginx_local_ip: ${yandex_compute_instance.node01-nginx.network_interface.0.ip_address}
 
+    environment:
+      http_proxy: 'http://{{ nginx_local_ip }}:3128'
+      https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
     DOC
   filename = "../ansible/group_vars/all.yml"
 
   depends_on = [
-    yandex_compute_instance.node01-nginx
+    yandex_compute_instance.node01-nginx,
+    yandex_compute_instance.node02-db01,
+    yandex_compute_instance.node03-db02,
+    yandex_compute_instance.node04-app
   ]
 }

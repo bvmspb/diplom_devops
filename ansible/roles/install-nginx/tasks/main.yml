@@ -13,3 +13,23 @@
     name: nginx
     state: started
     enabled: yes
+
+- name: Nginx - install squid proxy for https
+  become: true
+  ansible.builtin.apt:
+    name: squid
+    state: present
+
+- name: Nginx - configure squid to allow all local networks to connect to it
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/squid/squid.conf
+    regexp: "^#http_access allow localnet"
+    line: http_access allow localnet
+
+- name: Nginx - restart squid service
+  become: true
+  ansible.builtin.systemd:
+    name: squid
+    state: restarted
+    enabled: yes

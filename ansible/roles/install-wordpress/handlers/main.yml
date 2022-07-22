@@ -1,0 +1,9 @@
+---
+# handlers file for install-wordpress
+
+- name: apache-restart
+  become: true
+  ansible.builtin.systemd:
+    name: apache2.service
+    state: restarted
+    enabled: true

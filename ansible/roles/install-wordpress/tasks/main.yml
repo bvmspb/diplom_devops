@@ -1,0 +1,126 @@
+---
+# tasks file for install-wordpress
+- name: Wordpress - Install Python and apache2
+  become: true
+  ansible.builtin.apt:
+    name:
+      - php7.4
+      - php7.4-common
+      - php7.4-mysql
+      - php7.4-gmp
+      - php7.4-curl
+      - php7.4-intl
+      - php7.4-mbstring
+      - php7.4-xmlrpc
+      - php7.4-gd
+      - php7.4-xml
+      - php7.4-cli
+      - php7.4-zip
+      - apache2
+      - mysql-client
+    state: present
+    update_cache: true
+#  notify: reload-wordpress
+
+- name: Wordpress - copy php.ini config for Apache2
+  become: true
+  ansible.builtin.copy:
+    src: php.ini
+    dest: /etc/php/7.4/apache2/php.ini
+    owner: www-data
+    group: www-data
+    mode: u+rw,g+rw,o+r
+    backup: true
+  notify: apache-restart
+
+- name: Wordpress - configure apache2 for Wordpress site
+  become: true
+  ansible.builtin.template:
+    src: templates/wordpress.conf.j2
+    dest: /etc/apache2/sites-available/wordpress.conf
+  notify: apache-restart
+
+- name: Wordpress - disable default apache2 site
+  become: true
+#  become_user: www-data
+  ansible.builtin.shell: a2dissite 000-default.conf
+  ignore_errors: true
+  notify: apache-restart
+
+- name: Wordpress - enable Wordpress site
+  become: true
+#  become_user: www-data
+  ansible.builtin.shell: a2ensite wordpress.conf
+  ignore_errors: true
+  notify: apache-restart
+
+- name: Wordpress - Enable apache2
+  become: true
+  ansible.builtin.systemd:
+    name: apache2
+    state: restarted
+    enabled: true
+
+- name: Wordpress - Create www root directory for Wordpress
+  become: true
+  ansible.builtin.file:
+    path: /var/www/wordpress/
+    state: directory
+    recurse: true
+    owner: www-data
+    group: www-data
+    mode: "0755"
+
+- name: Wordpress - get WP-CLI
+  become: true
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    dest: /usr/local/bin/wp
+    mode: "0755"
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: Wordpress - get latest Wordpress
+  become: true
+  ansible.builtin.get_url:
+    url: https://wordpress.org/latest.tar.gz
+    dest: /tmp/wordpress.tgz
+    mode: "0755"
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: Unarchive a file that needs to be downloaded (added in 2.0)
+  become: true
+  ansible.builtin.unarchive:
+    src: https://wordpress.org/latest.tar.gz
+    dest: /var/www/
+    remote_src: yes
+    owner: www-data
+    group: www-data
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: Wordpress - download, install and configure wordpress via WP-CLI
+  become: true
+#  become_user: www-data
+  ansible.builtin.shell: sudo -u www-data wp core config --dbhost=db01 --dbname=wordpress --dbuser=wordpress --dbpass=wordpress
+  args:
+    chdir: /var/www/wordpress/
+  ignore_errors: true
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: Wordpress - download, install and configure wordpress via WP-CLI
+  become: true
+#  become_user: www-data
+  ansible.builtin.shell: sudo -u www-data wp core install --url=www.{{ domain_name }} --title="BVMSPB Netology DEVOPS Diplom" --admin_user=supervisor --admin_password=strongpassword --admin_email=admin@{{ domain_name }}
+  args:
+    chdir: /var/www/wordpress/
+  ignore_errors: true
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'

@@ -22,7 +22,6 @@ resource "local_file" "inventory" {
         db02:
           ansible_host: ${yandex_compute_instance.node03-db02.network_interface.0.ip_address}
 
-
     dbservers:
       children:
         master:
@@ -40,12 +39,20 @@ resource "local_file" "inventory" {
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ domain_name }}"'
       children:
         dbservers:
+        www:
+
+    www:
+      hosts:
+        app:
+          ansible_host: ${yandex_compute_instance.node04-app.network_interface.0.ip_address}
+
     DOC
   filename = "../ansible/inventory/stage.yml"
 
   depends_on = [
     yandex_compute_instance.node01-nginx,
     yandex_compute_instance.node02-db01,
-    yandex_compute_instance.node03-db02
+    yandex_compute_instance.node03-db02,
+    yandex_compute_instance.node04-app
   ]
 }
