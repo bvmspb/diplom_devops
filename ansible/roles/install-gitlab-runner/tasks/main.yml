@@ -1,0 +1,38 @@
+---
+# tasks file for install-gitlab-runner
+- name: Gitlab-runner - Install dependencies first
+  become: true
+  ansible.builtin.apt:
+    name:
+      - curl
+      - openssh-server
+      - ca-certificates
+      - tzdata
+      - perl
+#      - postfix
+    state: present
+    update_cache: true
+
+- name: Gitlab-runner - Get package
+  become: true
+  ansible.builtin.get_url:
+    url: https://gitlab-runner-downloads.s3.amazonaws.com/latest/deb/gitlab-runner_amd64.deb
+    dest: /tmp/gitlab-runner.deb
+    mode: "0666"
+#  environment:
+#    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+#    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: Gitlab-runner - Install a .deb package
+  become: true
+  ansible.builtin.apt:
+    deb: /tmp/gitlab-runner.deb
+  timeout: 600
+  ignore_errors: true
+
+- name: Gitlab-runner - register a runner to Gitlab
+  become: true
+  ansible.builtin.command: 'gitlab-runner register --non-interactive --url "http://gitlab.{{domain_name}}/" --registration-token "{{gitlab_runner_token}}" --executor "shell" --docker-image alpine:latest --description "shell-runner" --maintenance-note "Free-form maintainer notes about this runner" --tag-list "shell" --run-untagged="true" --locked="false" --access-level="not_protected"'
+#  args:
+#    chdir: /etc/gitlab/
+  ignore_errors: true

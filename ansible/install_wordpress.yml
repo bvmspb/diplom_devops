@@ -7,3 +7,4 @@
     http_proxy: 'http://{{ nginx_local_ip }}:3128'
     https_proxy: 'http://{{ nginx_local_ip }}:3128'
 
+

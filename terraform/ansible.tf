@@ -65,3 +65,23 @@ resource "null_resource" "wordpress" {
     null_resource.mysql
   ]
 }
+
+resource "null_resource" "gitlab" {
+  provisioner "local-exec" {
+    command = "ANSIBLE_FORCE_COLOR=1 ansible-playbook -i ../ansible/inventory/stage.yml ../ansible/install_gitlab.yml"
+  }
+
+  depends_on = [
+    null_resource.apt_proxy
+  ]
+}
+
+resource "null_resource" "gitlab-runner" {
+  provisioner "local-exec" {
+    command = "ANSIBLE_FORCE_COLOR=1 ansible-playbook -i ../ansible/inventory/stage.yml ../ansible/install_gitlab_runner.yml"
+  }
+
+  depends_on = [
+    null_resource.gitlab
+  ]
+}

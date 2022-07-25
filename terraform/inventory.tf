@@ -36,16 +36,31 @@ resource "local_file" "inventory" {
 
     behind_proxy:
       vars:
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ domain_name }}"'
+        ansible_ssh_common_args: '-C -o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=30 -o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ domain_name }}"'
       children:
         dbservers:
         www:
+        cicd:
 
     www:
       hosts:
         app:
           ansible_host: ${yandex_compute_instance.node04-app.network_interface.0.ip_address}
 
+    cicd:
+      hosts:
+        gitlab:
+          ansible_host: ${yandex_compute_instance.node05-gitlab.network_interface.0.ip_address}
+          environment:
+            GITLAB_OMNIBUS_CONFIG: "external_url 'http://gitlab.{domain_name}/'; gitlab_rails['initial_root_password'] = '${var.gitlab_root_password}'"
+            EXTERNAL_URL: "{domain_name}"
+          vars:
+            gitlab_root_password: "${var.gitlab_root_password}"
+            gitlab_runner_token: "${var.gitlab_runner_token}"
+        runner:
+          ansible_host: ${yandex_compute_instance.node06-runner.network_interface.0.ip_address}
+          vars:
+            gitlab_runner_token: "${var.gitlab_runner_token}"
     DOC
   filename = "../ansible/inventory/stage.yml"
 
@@ -53,6 +68,8 @@ resource "local_file" "inventory" {
     yandex_compute_instance.node01-nginx,
     yandex_compute_instance.node02-db01,
     yandex_compute_instance.node03-db02,
-    yandex_compute_instance.node04-app
+    yandex_compute_instance.node04-app,
+    yandex_compute_instance.node05-gitlab,
+    yandex_compute_instance.node06-runner
   ]
 }

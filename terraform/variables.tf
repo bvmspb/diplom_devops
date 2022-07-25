@@ -45,6 +45,13 @@ variable "database_replication_user_password" {
   default = "REplicauserpass123"
 }
 
+variable "gitlab_root_password" {
+  default = "gitlabroopass0rd"
+}
+
+variable "gitlab_runner_token" {
+  default = "tokentokentoken"
+}
 
 # Заменить на ID своего образа
 # ID можно узнать с помощью команды yc compute image list

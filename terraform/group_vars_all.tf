@@ -10,7 +10,7 @@ resource "local_file" "group_vars" {
         ip: "${yandex_compute_instance.node04-app.network_interface.0.ip_address}"
         port: 80
       - name: gitlab
-        ip: "127.0.0.1"
+        ip: "${yandex_compute_instance.node05-gitlab.network_interface.0.ip_address}"
         port: 80
       - name: grafana
         ip: "127.0.0.1"
@@ -29,6 +29,9 @@ resource "local_file" "group_vars" {
       http_proxy: 'http://{{ nginx_local_ip }}:3128'
       https_proxy: 'http://{{ nginx_local_ip }}:3128'
 
+    gitlab_root_password: '${var.gitlab_root_password}'
+    gitlab_runner_token: '${var.gitlab_runner_token}'
+
     DOC
   filename = "../ansible/group_vars/all.yml"
 
@@ -36,6 +39,8 @@ resource "local_file" "group_vars" {
     yandex_compute_instance.node01-nginx,
     yandex_compute_instance.node02-db01,
     yandex_compute_instance.node03-db02,
-    yandex_compute_instance.node04-app
+    yandex_compute_instance.node04-app,
+    yandex_compute_instance.node05-gitlab,
+    yandex_compute_instance.node06-runner
   ]
 }

@@ -1,0 +1,27 @@
+- name: Install Gitlab runner
+  hosts: runner
+  remote_user: ubuntu
+  roles:
+    - install-gitlab-runner
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+#    GITLAB_OMNIBUS_CONFIG: "external_url 'http://gitlab.{domain_name}/'; gitlab_rails['initial_root_password'] = 'gitlabrootpass0rd'"
+#    GITLAB_ROOT_PASSWORD: "gitlabrootpass0rd"
+  post_tasks:
+    - name: Gitlab runner - Copy - private key to runner server
+      ansible.builtin.copy:
+        src: ~/.ssh/id_rsa
+        dest: /tmp/id_rsa
+        owner: ubuntu
+        group: ubuntu
+        mode: u+rw,g+rw,o+rw
+        backup: yes
+    - name: Gitlab runner - Copy - ssh config to reduce strict restrictions on a runner host
+      ansible.builtin.copy:
+        src: config.ssh
+        dest: /home/ubuntu/.ssh/config
+        owner: ubuntu
+        group: ubuntu
+        mode: u+rw,g+rw,o+r
+        backup: yes

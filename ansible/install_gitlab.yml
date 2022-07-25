@@ -1,0 +1,10 @@
+- name: Install Gitlab
+  hosts: gitlab
+  remote_user: ubuntu
+  roles:
+    - install-gitlab
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+    GITLAB_OMNIBUS_CONFIG: "external_url 'http://gitlab.{domain_name}/'; gitlab_rails['initial_root_password'] = '{{gitlab_root_password}}'"
+    GITLAB_ROOT_PASSWORD: "{{gitlab_root_password}}"

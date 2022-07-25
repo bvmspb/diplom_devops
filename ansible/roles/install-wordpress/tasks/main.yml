@@ -69,27 +69,27 @@
     recurse: true
     owner: www-data
     group: www-data
-    mode: "0755"
+    mode: "0775"
 
 - name: Wordpress - get WP-CLI
   become: true
   ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
     dest: /usr/local/bin/wp
-    mode: "0755"
+    mode: "0775"
   environment:
     http_proxy: 'http://{{ nginx_local_ip }}:3128'
     https_proxy: 'http://{{ nginx_local_ip }}:3128'
 
-- name: Wordpress - get latest Wordpress
-  become: true
-  ansible.builtin.get_url:
-    url: https://wordpress.org/latest.tar.gz
-    dest: /tmp/wordpress.tgz
-    mode: "0755"
-  environment:
-    http_proxy: 'http://{{ nginx_local_ip }}:3128'
-    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+#- name: Wordpress - get latest Wordpress
+#  become: true
+#  ansible.builtin.get_url:
+#    url: https://wordpress.org/latest.tar.gz
+#    dest: /tmp/wordpress.tgz
+#    mode: "0755"
+#  environment:
+#    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+#    https_proxy: 'http://{{ nginx_local_ip }}:3128'
 
 - name: Unarchive a file that needs to be downloaded (added in 2.0)
   become: true
@@ -124,3 +124,19 @@
   environment:
     http_proxy: 'http://{{ nginx_local_ip }}:3128'
     https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: Wordpress - Configure SSL headers handling 1
+  become: true
+  ansible.builtin.lineinfile:
+    path: /var/www/wordpress/wp-config.php
+    search_string: 'Add any custom values between'
+    insertafter: 'Add any custom values between this line and the "stop editing" line. */'
+    line: "if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') { $_SERVER['HTTPS'] = 'on'; $_SERVER['SERVER_PORT'] = 443; }"
+
+- name: Wordpress - Configure SSL headers handling 2
+  become: true
+  ansible.builtin.lineinfile:
+    path: /var/www/wordpress/wp-config.php
+    search_string: 'Happy publishing'
+    insertbefore: 'Happy publishing'
+    line: "if (!empty($_SERVER['HTTP_X_FORWARDED_HOST'])) { $_SERVER['HTTP_HOST'] = $_SERVER['HTTP_X_FORWARDED_HOST']; }"
