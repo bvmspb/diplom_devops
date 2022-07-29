@@ -25,3 +25,7 @@ output "internal_ip_address_node05_gitlab_yandex_cloud" {
 output "internal_ip_address_node06_runner_yandex_cloud" {
   value = yandex_compute_instance.node06-runner.network_interface.0.ip_address
 }
+
+output "internal_ip_address_node07_monitoring_yandex_cloud" {
+  value = yandex_compute_instance.node07-monitoring.network_interface.0.ip_address
+}

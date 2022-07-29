@@ -85,3 +85,23 @@ resource "null_resource" "gitlab-runner" {
     null_resource.gitlab
   ]
 }
+
+resource "null_resource" "node_exporter" {
+  provisioner "local-exec" {
+    command = "ANSIBLE_FORCE_COLOR=1 ansible-playbook -i ../ansible/inventory/stage.yml ../ansible/install_node_exporter.yml"
+  }
+
+  depends_on = [
+    null_resource.apt_proxy
+  ]
+}
+
+resource "null_resource" "monitoring" {
+  provisioner "local-exec" {
+    command = "ANSIBLE_FORCE_COLOR=1 ansible-playbook -i ../ansible/inventory/stage.yml ../ansible/install_monitoring.yml"
+  }
+
+  depends_on = [
+    null_resource.node_exporter
+  ]
+}

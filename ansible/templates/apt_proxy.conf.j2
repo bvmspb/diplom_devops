@@ -1,2 +1,2 @@
 Acquire::http::Proxy "http://{{ nginx_local_ip }}:8888/";
-#Acquire::https::Proxy "https://username:password@proxy-server-ip:8182/";
+Acquire::https::Proxy "http://{{ nginx_local_ip }}:3128/";

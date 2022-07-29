@@ -22,6 +22,13 @@
     update_cache: true
 #  notify: reload-wordpress
 
+- name: create www-data system group
+  become: true
+  group:
+    name: "www-data"
+    system: true
+    state: present
+
 - name: Wordpress - copy php.ini config for Apache2
   become: true
   ansible.builtin.copy:
@@ -69,14 +76,14 @@
     recurse: true
     owner: www-data
     group: www-data
-    mode: "0775"
+    mode: "0777"
 
 - name: Wordpress - get WP-CLI
   become: true
   ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
     dest: /usr/local/bin/wp
-    mode: "0775"
+    mode: "0777"
   environment:
     http_proxy: 'http://{{ nginx_local_ip }}:3128'
     https_proxy: 'http://{{ nginx_local_ip }}:3128'
@@ -129,14 +136,30 @@
   become: true
   ansible.builtin.lineinfile:
     path: /var/www/wordpress/wp-config.php
-    search_string: 'Add any custom values between'
-    insertafter: 'Add any custom values between this line and the "stop editing" line. */'
+#    search_string: 'Add any custom values between'
+#    insertbefore: '/* Add any custom values between this line and the "stop editing" line. */'
+    insertbefore: 'Happy publishing'
     line: "if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') { $_SERVER['HTTPS'] = 'on'; $_SERVER['SERVER_PORT'] = 443; }"
 
 - name: Wordpress - Configure SSL headers handling 2
   become: true
   ansible.builtin.lineinfile:
     path: /var/www/wordpress/wp-config.php
-    search_string: 'Happy publishing'
+#    search_string: 'Happy publishing'
+#    insertbefore: '/* Add any custom values between this line and the "stop editing" line. */'
     insertbefore: 'Happy publishing'
     line: "if (!empty($_SERVER['HTTP_X_FORWARDED_HOST'])) { $_SERVER['HTTP_HOST'] = $_SERVER['HTTP_X_FORWARDED_HOST']; }"
+
+- name: Wordpress - Check permissions for www root directory for Wordpress
+  become: true
+  ansible.builtin.file:
+    path: /var/www/wordpress
+    state: directory
+    recurse: true
+    owner: www-data
+    group: www-data
+    mode: "0777"
+
+- name: appending the www-data group for ubuntu user
+  become: true
+  ansible.builtin.shell: "usermod -a -G www-data ubuntu"

@@ -1,0 +1,278 @@
+---
+# tasks file for install-monitoring
+# Prometheus первый, затем Grafana
+- name: create prometheus system group
+  become: true
+  group:
+    name: "{{ prometheus_user }}"
+    system: true
+    state: present
+
+- name: create prometheus system user
+  become: true
+  user:
+    name: prometheus
+    system: true
+    shell: "/usr/sbin/nologin"
+    group: prometheus
+    createhome: false
+    home: "/var/lib/prometheus"
+
+- name: Unarchive a file that needs to be downloaded (added in 2.0)
+  become: true
+  ansible.builtin.unarchive:
+    src: "https://github.com/prometheus/prometheus/releases/download/v2.37.0/prometheus-2.37.0.linux-amd64.tar.gz"
+    dest: "/tmp/"
+    include: "prometheus-2.37.0.linux-amd64/prometheus"
+    remote_src: yes
+    mode: "0755"
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: Ensure that /etc/prometheus/rules exists
+  become: true
+  file:
+    state: directory
+    path: /etc/prometheus/rules
+    recurse: true
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_user }}"
+    mode: 0755
+
+- name: create /var/lib/prometheus/data
+  become: true
+  file:
+    state: directory
+    path: /var/lib/prometheus/data
+    recurse: true
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_user }}"
+    mode: 0755
+
+- name: copy the server binary to {{ server_binary_dest }}
+  become: true
+  copy:
+    src: "/tmp/prometheus-2.37.0.linux-amd64/prometheus"
+    dest: "{{ server_binary_dest }}"
+    mode: 0755
+    remote_src: yes
+
+- name: place prometheus config
+  become: true
+  template:
+    src: prometheus.yaml.j2
+    dest: /etc/prometheus/prometheus.yaml
+    force: true
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_user }}"
+    mode: 0664
+  notify:
+    - reload prometheus
+
+- name: put systemd service file in place
+  become: true
+  copy:
+    src: "{{ server_service }}"
+    dest: "{{ server_service_dest }}"
+
+- name: update systemd and restart prometheus server systemd
+  become: true
+  systemd:
+    daemon-reload: true
+    enabled: true
+    state: restarted
+    name: "{{ server_service }}"
+
+  notify: restart_prometheus_server
+
+- name: alerting rules file
+  become: true
+  copy:
+    src: "alert.rules"
+    dest: "/etc/prometheus/rules/ansible_managed.rules"
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_user }}"
+    mode: 0640
+  notify:
+    - reload prometheus
+
+# Alert manager:
+- name: create /opt/alertmanager install path
+  become: true
+  file:
+    state: directory
+    path: /opt/alertmanager
+    recurse: true
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_user }}"
+    mode: 0755
+
+- name: create /var/lib/alertmanager storage path
+  become: true
+  file:
+    state: directory
+    path: /var/lib/alertmanager
+    recurse: true
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_user }}"
+    mode: 0755
+
+- name: create /etc/alertmanager/templates config and templates path
+  become: true
+  file:
+    state: directory
+    path: /etc/alertmanager/templates
+    recurse: true
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_user }}"
+    mode: 0755
+
+- name: Unarchive a file that needs to be downloaded (added in 2.0)
+  become: true
+  ansible.builtin.unarchive:
+    src: "https://github.com/prometheus/alertmanager/releases/download/v0.24.0/alertmanager-0.24.0.linux-amd64.tar.gz"
+    dest: "/tmp"
+    remote_src: yes
+    mode: "0755"
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: Alert Manager - copy the server binary to /opt/alertmanager/
+  become: true
+  copy:
+    src: "/tmp/alertmanager-0.24.0.linux-amd64/alertmanager"
+    dest: "/opt/alertmanager/"
+    mode: 0755
+    remote_src: yes
+
+- name: copy the amtool to /opt/alertmanager/
+  become: true
+  copy:
+    src: "/tmp/alertmanager-0.24.0.linux-amd64/amtool"
+    dest: "/opt/alertmanager/"
+    mode: 0755
+    remote_src: yes
+
+- name: Alert manager configuration file
+  become: true
+  template:
+    src: "alertmanager.yml.j2"
+    dest: "/etc/alertmanager/alertmanager.yml"
+    owner: "{{ prometheus_user }}"
+    group: "{{ prometheus_user }}"
+    mode: 0640
+  notify:
+    - reload alertmanager
+
+- name: put systemd service file in place
+  become: true
+  copy:
+    src: "alertmanager.service"
+    dest: "/etc/systemd/system/alertmanager.service"
+
+- name: update systemd and restart prometheus server systemd
+  become: true
+  systemd:
+    daemon-reload: true
+    enabled: true
+    state: restarted
+    name: "alertmanager.service"
+
+
+# Grafana:
+- name: Grafana - Install dependencies first
+  become: true
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - software-properties-common
+    state: present
+    update_cache: true
+
+- name: Grafana - Get gpg.key
+  become: true
+  ansible.builtin.get_url:
+    url: https://packages.grafana.com/gpg.key
+    dest: /usr/share/keyrings/grafana.key
+    mode: "0666"
+#  environment:
+#    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+#    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: Grafana - Add this repository for stable releases
+  become: true
+  ansible.builtin.shell:
+    cmd: 'echo "deb [signed-by=/usr/share/keyrings/grafana.key] https://packages.grafana.com/oss/deb stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list'
+
+- name: Grafana - Install grafana
+  become: true
+  ansible.builtin.apt:
+    name: grafana
+    state: present
+    update_cache: true
+
+- name: Grafana - Configure proxy 1
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/default/grafana-server
+    line: "http_proxy={{ nginx_local_ip }}:3128"
+
+- name: Grafana - Configure proxy 2
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/default/grafana-server
+    line: "https_proxy={{ nginx_local_ip }}:3128"
+
+- name: update systemd and restart grafana systemd
+  become: true
+  systemd:
+    daemon-reload: true
+    enabled: true
+    state: restarted
+    name: "grafana-server"
+
+- name: create /etc/grafana/provisioning/datasources/
+  become: true
+  file:
+    state: directory
+    path: /etc/grafana/provisioning/datasources/
+    recurse: true
+    owner: "grafana"
+    group: "grafana"
+    mode: 0755
+
+- name: copy the server binary to /etc/grafana/provisioning/datasources/
+  become: true
+  copy:
+    src: "grafana-prometheus-datasource.yml"
+    dest: "/etc/grafana/provisioning/datasources/grafana-prometheus-datasource.yml"
+    mode: 0664
+    owner: "grafana"
+    group: "grafana"
+
+- name: create /var/lib/grafana/dashboards/
+  become: true
+  file:
+    state: directory
+    path: /var/lib/grafana/dashboards/
+    recurse: true
+    owner: "grafana"
+    group: "grafana"
+    mode: 0777
+
+- name: wait for service up
+  uri:
+    url: "http://127.0.0.1:3000"
+    status_code: 200
+  register: __result
+  until: __result.status == 200
+  retries: 120
+  delay: 1
+
+- name: change admin password for Grafana gui
+  become: true
+  shell : "grafana-cli admin reset-admin-password {{ grafana_password }}"
+
+- include: dashboards.yml

@@ -375,7 +375,7 @@ deploy-job:      # This job runs in the deploy stage.
     - if: $CI_COMMIT_TAG                  # Run this job when a tag is created manually
   script:
     - echo "Running the release job."
-    - scp -i /tmp/id_rsa -C -o StrictHostKeyChecking=no * ubuntu@app.bvm.pw:/var/www/wordpress/
+    - scp -i /tmp/id_rsa -C -o StrictHostKeyChecking=no * ubuntu@app.bvm.pw:/var/www/wordpress
 ```
 
 [Результат работы pipeline](https://github.com/bvmspb/diplom_devops/blob/main/images/diplom_gitlab_ci.png): ![Скриншот1](images/diplom_gitlab_ci.png)
@@ -397,25 +397,114 @@ deploy-job:      # This job runs in the deploy stage.
 
 Интерфейсы Prometheus, Alert Manager и Grafana доступны по https.
 В вашей доменной зоне настроены A-записи на внешний адрес reverse proxy:
+
 • https://grafana.you.domain (Grafana)
+
 • https://prometheus.you.domain (Prometheus)
+
 • https://alertmanager.you.domain (Alert Manager)
+
 На сервере you.domain отредактированы upstreams для выше указанных URL и они смотрят на виртуальную машину на которой установлены Prometheus, Alert Manager и Grafana.
+
 На всех серверах установлен Node Exporter и его метрики доступны Prometheus.
+
 У Alert Manager есть необходимый набор правил для создания алертов.
+
 В Grafana есть дашборд отображающий метрики из Node Exporter по всем серверам.
+
 В Grafana есть дашборд отображающий метрики из MySQL (*).
+
 В Grafana есть дашборд отображающий метрики из WordPress (*).
+
 Примечание: дашборды со звёздочкой являются опциональными заданиями повышенной сложности их выполнение желательно, но не обязательно.
+
+```answer7-1
+Здесь я воспользовался инструкциями для подготовки ansible playbook для 
+Prometheus и node-exporter отсюда:
+https://opensource.com/article/18/3/how-use-ansible-set-system-monitoring-prometheus
+https://github.com/cloudalchemy/ansible-prometheus
+
+Alertmanager download link:
+https://github.com/prometheus/alertmanager/releases/download/v0.24.0/alertmanager-0.24.0.linux-amd64.tar.gz
+Instrusctions:
+https://github.com/prometheus/alertmanager
+
+Grafana устанавливал по аналогии, использовал инструкции для шагов из:
+https://grafana.com/docs/grafana/next/setup-grafana/installation/debian/#install-from-apt-repository
+https://grafana.com/docs/grafana/next/setup-grafana/installation/debian/#2-start-the-server
+https://github.com/cloudalchemy/ansible-grafana/tree/master/tasks
+https://ahelpme.com/software/grafana/reset-lost-admin-password-of-grafana-server-centos-7/
+Удалось найти описание как настроить datasource для Grafana (снова не на 
+сайте самой программы):
+https://rtfm.co.ua/grafana-dobavlenie-datasource-iz-ansible/
+Помог репозиторий с примерами одного индуса тоже:
+https://gitlab.com/xavki/devopsland/-/tree/master/ansible/39-PE-monitoring-dashboard/ansible_dir/roles
+
+Дашборд Grafana для node_explorera взял Node Exporter Full - он первый 
+в списке по популярности и про него видел в видеоинструкциях на youtube 
+тоже рекомендации.
+https://grafana.com/grafana/dashboards/1860
+```
+
+```answer7-2
+Из особенностей:
+У Grafana потребовалось изменить файл с переменными окружения - чтобы 
+добавить исходящие прокси для возможности скачивания дашбордов и т.п.
+
+Так как сервисы работают не на стандартном http (80) порту - certbot 
+в штатном режиме не обновил конфиг nginx в полной мере - в 
+конфигурационный файл nginx для домента bvm.pw добавил статичные правила 
+переадресации с 80 порта на 443 для поддоменов:
+https://grafana.you.domain (Grafana)
+https://prometheus.you.domain (Prometheus)
+https://alertmanager.you.domain (Alert Manager)
+
+Также у Gitlab есть свой Prometheus и node_exporter - по умолчанию они 
+слушают только на интерфейсе localhost - пришлось поискать в конфиге 
+listen параметр, чтобы они начали слушать на 0.0.0.0
+```
+
+```answer7-3
+После всех правок в существующих конфигах и победе над новыми 
+приложениями мониторинга получилось увидеть "зеленый" статус "up" в 
+Prometheus по всем линкам, а Grafana начала отображать даже какие-то 
+графики и показатели загрузки. В хое работы над ролью 
+install-monitoring понял, что потратил уйму сил и времени на то, 
+чтобы попытаться собрать по кусочкам "своё", но, вероятно, наиболее 
+быстрым и оптимальным с точки зрения трудозатрат было бы все-таки 
+найти и использовать непосредственно готовые роли из ansible galaxy 
+репозитория - не пытаясь "убрать из них все лишнее" и т.п. 
+
+Дополнительные экспортеры для MySQL и Wordpress не искал/не ставил - 
+дополнительные дажшборды в Grafana не ставил, т.к. нет уже времени 
+(и сил, признаться)
+```
+
 
 Что необходимо для сдачи задания?
 
 Репозиторий со всеми Terraform манифестами и готовность продемонстрировать создание всех ресурсов с нуля.
 Репозиторий со всеми Ansible ролями и готовность продемонстрировать установку всех сервисов с нуля.
 Скриншоты веб-интерфейсов всех сервисов работающих по HTTPS на вашем доменном имени.
-https://www.you.domain (WordPress)
-https://gitlab.you.domain (Gitlab)
-https://grafana.you.domain (Grafana)
-https://prometheus.you.domain (Prometheus)
-https://alertmanager.you.domain (Alert Manager)
+
+* https://www.you.domain (WordPress)
+* https://gitlab.you.domain (Gitlab)
+* https://grafana.you.domain (Grafana)
+* https://prometheus.you.domain (Prometheus)
+* https://alertmanager.you.domain (Alert Manager)
+
 Все репозитории рекомендуется хранить на одном из ресурсов (github.com или gitlab.com).
+
+```answer-diplom
+Удалось автоматизировать большую часть заданий. Последовательность 
+выполнения и результаты проверки в "PROD-режиме" выкладываю в отдельном 
+файле readme.md Вручную необходимо делать только - создать новый 
+репозиторий в Gitlab, а после его запуска добавить правило в pipeline 
+для deploy по факту создания нового тега.
+
+Никак не реализовал использование различных Workspace в terraform - все 
+работы выполнял в Stage.
+```
+[Шаги запуска стенда, работы со стендом и иллюстрации перечислил отдельно в README.md](https://github.com/bvmspb/diplom_devops/blob/main/README.md)
+
+---

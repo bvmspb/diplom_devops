@@ -41,6 +41,7 @@ resource "local_file" "inventory" {
         dbservers:
         www:
         cicd:
+        prometheus:
 
     www:
       hosts:
@@ -61,6 +62,21 @@ resource "local_file" "inventory" {
           ansible_host: ${yandex_compute_instance.node06-runner.network_interface.0.ip_address}
           vars:
             gitlab_runner_token: "${var.gitlab_runner_token}"
+
+    prometheus:
+      hosts:
+        monitoring:
+          ansible_host: ${yandex_compute_instance.node07-monitoring.network_interface.0.ip_address}
+
+    node_exporter_nodes:
+      hosts:
+        node01_nginx:
+        db01:
+        db02:
+        app:
+    #    gitlab:
+        runner:
+        monitoring:
     DOC
   filename = "../ansible/inventory/stage.yml"
 

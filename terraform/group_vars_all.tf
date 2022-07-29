@@ -13,13 +13,13 @@ resource "local_file" "group_vars" {
         ip: "${yandex_compute_instance.node05-gitlab.network_interface.0.ip_address}"
         port: 80
       - name: grafana
-        ip: "127.0.0.1"
+        ip: "${yandex_compute_instance.node07-monitoring.network_interface.0.ip_address}"
         port: 3000
       - name: prometheus
-        ip: "127.0.0.1"
+        ip: "${yandex_compute_instance.node07-monitoring.network_interface.0.ip_address}"
         port: 9090
       - name: alertmanager
-        ip: "127.0.0.1"
+        ip: "${yandex_compute_instance.node07-monitoring.network_interface.0.ip_address}"
         port: 9093
 
     test_cert: "${var.test_cert}"
@@ -32,6 +32,33 @@ resource "local_file" "group_vars" {
     gitlab_root_password: '${var.gitlab_root_password}'
     gitlab_runner_token: '${var.gitlab_runner_token}'
 
+    exporter_binary: 'prometheus_node_exporter'
+    exporter_binary_dest: '/usr/bin/prometheus_node_exporter'
+    exporter_service: 'prometheus-node-exporter.service'
+    exporter_service_dest: '/etc/systemd/system/prometheus-node-exporter.service'
+    exporter_upstart: 'prometheus-node-exporter.conf'
+    exporter_upstart_dest: '/etc/init/prometheus-node-exporter.conf'
+
+    server_binary: 'prometheus'
+    server_binary_dest: '/usr/bin/prometheus'
+    server_service: 'prometheus.service'
+    server_service_dest: '/etc/systemd/system/prometheus.service'
+
+    prometheus_user: 'prometheus'
+    prometheus_server_name: 'prometheus'
+
+    client_information_dict:
+        '{{ domain_name }}': '${yandex_compute_instance.node01-nginx.network_interface.0.ip_address}:9100'
+        'db01.{{ domain_name }}': '${yandex_compute_instance.node02-db01.network_interface.0.ip_address}:9100'
+        'db02.{{ domain_name }}': '${yandex_compute_instance.node03-db02.network_interface.0.ip_address}:9100'
+        'app.{{ domain_name }}': '${yandex_compute_instance.node04-app.network_interface.0.ip_address}:9100'
+        'gitlab.{{ domain_name }}': '${yandex_compute_instance.node05-gitlab.network_interface.0.ip_address}:9100'
+        'runner.{{ domain_name }}': '${yandex_compute_instance.node06-runner.network_interface.0.ip_address}:9100'
+        'monitoring.{{ domain_name }}': '${yandex_compute_instance.node07-monitoring.network_interface.0.ip_address}:9100'
+    grafana_password: '${var.grafana_password}'
+
+
+
     DOC
   filename = "../ansible/group_vars/all.yml"
 
@@ -41,6 +68,7 @@ resource "local_file" "group_vars" {
     yandex_compute_instance.node03-db02,
     yandex_compute_instance.node04-app,
     yandex_compute_instance.node05-gitlab,
-    yandex_compute_instance.node06-runner
+    yandex_compute_instance.node06-runner,
+    yandex_compute_instance.node07-monitoring
   ]
 }

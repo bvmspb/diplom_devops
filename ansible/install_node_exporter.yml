@@ -1,0 +1,9 @@
+- name: Install node-exporter
+  hosts: node_exporter_nodes
+
+  remote_user: ubuntu
+  roles:
+    - install-node-exporter
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'

@@ -1,0 +1,19 @@
+[Unit]
+Description=Alertmanager
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+ExecStart=/opt/alertmanager/alertmanager \
+    --config.file /etc/alertmanager/alertmanager.yml \
+    --web.listen-address 0.0.0.0:9093 \
+    --storage.path /var/lib/alertmanager \
+    --data.retention 168h \
+    --log.level info
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

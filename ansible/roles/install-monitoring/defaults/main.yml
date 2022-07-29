@@ -1,0 +1,19 @@
+---
+# defaults file for install-monitoring
+grafana_dashboards:
+# Node Exporter Full:
+  - dashboard_id: '1860'
+    revision_id: '27'
+    datasource: 'Prometheus'
+# Prometheus 2.0 Overview:
+  - dashboard_id: '3662'
+    revision_id: '2'
+    datasource: 'Prometheus'
+## MySQL Overview:
+#  - dashboard_id: '7362'
+#    revision_id: '5'
+#    datasource: 'Prometheus'
+#
+#  - dashboard_id: '14996'
+#    revision_id: '1'
+#    datasource: 'Prometheus'

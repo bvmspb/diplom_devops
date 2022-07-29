@@ -30,3 +30,30 @@ server {
   }
 }
 {% endfor %}
+
+server {
+    if ($host = grafana.bvm.pw) {
+        return 301 https://$host$request_uri;
+    }
+  listen 80;
+  server_name grafana.bvm.pw;
+    return 404;
+}
+
+server {
+    if ($host = prometheus.bvm.pw) {
+        return 301 https://$host$request_uri;
+    }
+  listen 80;
+  server_name prometheus.bvm.pw;
+    return 404;
+}
+
+server {
+    if ($host = alertmanager.bvm.pw) {
+        return 301 https://$host$request_uri;
+    }
+  listen 80;
+  server_name alertmanager.bvm.pw;
+    return 404;
+}

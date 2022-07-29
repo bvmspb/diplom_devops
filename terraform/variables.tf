@@ -53,6 +53,10 @@ variable "gitlab_runner_token" {
   default = "tokentokentoken"
 }
 
+variable "grafana_password" {
+  default = "grafana_password"
+}
+
 # Заменить на ID своего образа
 # ID можно узнать с помощью команды yc compute image list
 #ubuntu-2004 - fd81u2vhv3mc49l1ccbb

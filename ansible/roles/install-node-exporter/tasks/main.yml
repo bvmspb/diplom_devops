@@ -1,0 +1,35 @@
+---
+# tasks file for install-node-exporter
+- name: Unarchive a file that needs to be downloaded (added in 2.0)
+  become: true
+  ansible.builtin.unarchive:
+    src: "https://github.com/prometheus/node_exporter/releases/download/v1.3.1/node_exporter-1.3.1.linux-amd64.tar.gz"
+    dest: "/tmp/"
+    include: "node_exporter-1.3.1.linux-amd64/node_exporter"
+    remote_src: yes
+    mode: "0755"
+  environment:
+    http_proxy: 'http://{{ nginx_local_ip }}:3128'
+    https_proxy: 'http://{{ nginx_local_ip }}:3128'
+
+- name: copy the binary to {{ exporter_binary_dest }}
+  become: true
+  copy:
+    src: "/tmp/node_exporter-1.3.1.linux-amd64/node_exporter"
+    dest: "{{ exporter_binary_dest }}"
+    mode: "0755"
+
+- name: put systemd service file in place
+  become: true
+  copy:
+    src: "prometheus-node-exporter.service"
+    dest: "/etc/systemd/system/prometheus-node-exporter.service"
+
+- name: update systemd and restart exporter systemd
+  become: true
+  systemd:
+    daemon-reload: true
+    enabled: true
+    state: restarted
+    name: "{{ exporter_service }}"
+

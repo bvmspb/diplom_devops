@@ -61,6 +61,18 @@
     path: /etc/gitlab/gitlab.rb
     line: "gitlab_rails['initial_shared_runners_registration_token'] = '{{gitlab_runner_token}}'"
 
+- name: Gitlab - Configure prometheuse to listen on 0.0.0.0:9090 parameter in /etc/gitlab/gitlab.rb
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/gitlab/gitlab.rb
+    line: "prometheus['listen_address'] = '0.0.0.0:9090'"
+
+- name: Gitlab - Configure prometheuse to listen on 0.0.0.0:9090 parameter in /etc/gitlab/gitlab.rb
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/gitlab/gitlab.rb
+    line: "node_exporter['listen_address'] = '0.0.0.0:9100'"
+
 - name: Gitlab - run reconfigure for the first time
   become: true
   ansible.builtin.command: gitlab-ctl reconfigure

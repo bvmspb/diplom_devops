@@ -1,0 +1,30 @@
+---
+# handlers file for install-monitoring
+- name: restart_prometheus_server
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: "{{ server_service }}"
+    state: restarted
+    enabled: true
+
+- name: reload prometheus
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: prometheus
+    state: reloaded
+
+- name: reload alertmanager
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: alertmanager
+    state: restarted
+
+- name: restart grafana
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: grafana-server
+    state: restarted

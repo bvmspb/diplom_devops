@@ -1,0 +1,63 @@
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+
+  external_labels:
+      monitor: 'diplom-monitor'
+
+rule_files:
+  - /etc/prometheus/rules/*.rules
+
+alerting:
+  alertmanagers:
+#  prometheus_alertmanager_config:
+#    - scheme: https
+#      path_prefix: alertmanager/
+#      basic_auth:
+#        username: user
+#        password: pass
+  - static_configs:
+    - targets: ["127.0.0.1:9093"]
+  alert_relabel_configs:
+    - action: labeldrop
+      regex: replica
+
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'nodes'
+    static_configs:
+      - targets:
+        - bvm.pw:9100
+        - db01:9100
+        - db02:9100
+        - app:9100
+        - gitlab:9100
+        - runner:9100
+        - monitoring:9100
+
+#  - job_name: 'nodes'
+#    static_configs:
+#{% for hostname, ip in client_information_dict.items() %}
+#      - targets: ['{{ hostname }}:9100']
+#        labels: {'host': '{{ hostname }}' }
+#{% endfor %}
+
+  - job_name: 'federate'
+    honor_labels: true
+    metrics_path: '/federate'
+#    - scheme: http
+    params:
+      'match[]':
+#        - '{job="prometheus"}'
+        - '{__name__=~".*"}'
+
+    static_configs:
+      - targets:
+        - 'gitlab:9090'
+#        - 'source-prometheus-2:9090'
+#        - 'source-prometheus-3:9090'
